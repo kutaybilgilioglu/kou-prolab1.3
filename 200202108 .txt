@@ -1,0 +1,1155 @@
+package theSmurfs;
+
+import java.awt.Color;
+import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import javax.swing.JFrame;
+import java.io.FileNotFoundException;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import static theSmurfs.Dijkstra.deneme;
+
+public class Oyun extends JFrame {
+
+    JLabel labirent[][] = new JLabel[11][13];
+    static char[][] maze = new char[11][13];
+    static Gargamel gargamel = new Gargamel(1, "gargamel", "dusman");
+    static Azman azman = new Azman(2, "azman", "dusman");
+    static GozlukluSirin gozluklu = new GozlukluSirin(3, "gozluklu", "oyuncu", 6, 5);
+    static Tembel tembel = new Tembel(4, "tembel", "oyuncu", 6, 5);
+    static Oyuncu oyuncuObje = new Oyuncu(5, "oyuncu", "oyuncu");
+    static Toolkit oyuncut = Toolkit.getDefaultToolkit();
+    static int sayac = 0, mantarx = 0, mantary = 0;
+    static JLabel altinlar[] = new JLabel[5];
+    static int altinx[] = new int[5];
+    static int altiny[] = new int[5];
+
+    public Oyun() {
+        initComponents();
+        setTitle("theSmurfs");
+        setSize(1400, 800);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        lblsirine.setVisible(false);
+        btngozluklu.setFocusable(false);
+        btntembel.setFocusable(false);
+        btnplay.setFocusable(false);
+        lblskor.setVisible(false);
+        this.getContentPane().setBackground(new Color(102, 204, 255));
+        addKeyListener(
+                new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e
+            ) {
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e
+            ) {
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e
+            ) {
+                if (e.getKeyCode() == 39 && maze[oyuncuObje.Y][oyuncuObje.X + 1] == '1' && oyuncuObje.X < 13) { //saga gitme
+                    lbloyuncu.setBounds((oyuncuObje.X + 1) * 60 + 53, oyuncuObje.Y * 60 + 50, 60, 60);
+                    oyuncuObje.X++;
+                    
+                }
+                if (e.getKeyCode() == 37 && maze[oyuncuObje.Y][oyuncuObje.X - 1] == '1' && oyuncuObje.X > 0) { //sola gitme
+                    lbloyuncu.setBounds((oyuncuObje.X - 1) * 60 + 53, oyuncuObje.Y * 60 + 50, 60, 60);
+                    oyuncuObje.X--;
+                }
+                if (e.getKeyCode() == 38 && maze[oyuncuObje.Y - 1][oyuncuObje.X] == '1' && oyuncuObje.Y > 0) { //uste gitme
+                    lbloyuncu.setBounds(oyuncuObje.X * 60 + 53, (oyuncuObje.Y - 1) * 60 + 50, 60, 60);
+                    oyuncuObje.Y--;
+                }
+                if (e.getKeyCode() == 40 && maze[oyuncuObje.Y + 1][oyuncuObje.X] == '1' && oyuncuObje.Y < 12) {//alta gitme
+                    lbloyuncu.setBounds(oyuncuObje.X * 60 + 53, (oyuncuObje.Y + 1) * 60 + 50, 60, 60);
+                    oyuncuObje.Y++;
+                }
+                PuaniGoster(oyuncuObje.X, oyuncuObje.Y, altinx, altiny, mantarx, mantary);
+                oyunSonu(oyuncuObje.X, oyuncuObje.Y);
+            }
+        }
+        );
+        labirent();
+        altinOlustur();
+        mantarOlustur();
+    }
+
+    public void altinOlustur() {
+        for (int i = 0; i < 5; i++) {
+            altinlar[i] = new JLabel();
+            this.getContentPane().add(altinlar[i], 1);
+            this.getContentPane().add(lbloyuncu, 2);
+            altinlar[i].setVisible(true);
+            altinlar[i].setOpaque(true);
+            altinlar[i].setBorder(BorderFactory.createLineBorder(Color.BLACK));
+            altinlar[i].setIcon(new javax.swing.ImageIcon("images\\altin.jpg"));
+        }
+    }
+
+    public void mantarOlustur() {
+        this.getContentPane().add(lblmantar, 2);
+        this.getContentPane().add(lbloyuncu, 2);
+        lblmantar.setVisible(true);
+        lblmantar.setOpaque(true);
+        lblmantar.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        lblmantar.setIcon(new javax.swing.ImageIcon("images\\mantar.jpg"));
+    }
+
+    public void labirent() { //labirenti cizdirme
+        for (int i = 0; i < 11; i++) {
+            for (int j = 0; j < 13; j++) {
+                labirent[i][j] = new JLabel();
+                this.getContentPane().add(labirent[i][j], 0);
+                labirent[i][j].setVisible(true);
+                labirent[i][j].setOpaque(true);
+                labirent[i][j].setBorder(BorderFactory.createLineBorder(Color.BLACK));
+            }
+        }
+        try {
+            File f = new File("harita.txt");
+            FileReader fr = new FileReader(f);
+            int c = 0, i = 0, j = 0;
+            while ((c = fr.read()) != -1) {
+                if ((char) c == '1' || (char) c == '0') {
+                    if (i != 11 && j != 13) {
+                        if ((char) c == '1') {
+                            if (i == 5 && j == 0 || j == 3 && i == 0 || j == 3 && i == 10 || j == 10 && i == 0) {
+                                labirent[i][j].setBackground(Color.PINK);
+                            } else if (j == 6 && i == 5) {
+                                labirent[i][j].setBackground(Color.BLUE);
+                            } else {
+                                labirent[i][j].setBackground(Color.WHITE);
+                            }
+                        } else {
+                            labirent[i][j].setBackground(Color.DARK_GRAY);
+                        }
+                        labirent[i][j].setBounds(j * 60 + 53, i * 60 + 50, 60, 60);
+                        maze[i][j] = (char) c;
+                        j++;
+                    } else if (j == 13) {
+                        i++;
+                        j = 0;
+                        if ((char) c == '1') {
+                            if (i == 5 && j == 0 || j == 3 && i == 0 || j == 3 && i == 10 || j == 10 && i == 0) {
+                                labirent[i][j].setBackground(Color.PINK);
+                            } else if (j == 6 && i == 5) {
+                                labirent[i][j].setBackground(Color.BLUE);
+                            } else {
+                                labirent[i][j].setBackground(Color.WHITE);
+                            }
+                        } else {
+                            labirent[i][j].setBackground(Color.DARK_GRAY);
+                        }
+                        labirent[i][j].setBounds(j * 60 + 53, i * 60 + 50, 60, 60);
+                        maze[i][j] = (char) c;
+                        j++;
+                    }
+                }
+            }
+            fr.close();
+        } catch (IOException e) {
+        }
+    }
+
+    public void PuaniGoster(int x, int y, int[] a, int[] b, int mantara, int mantarb) {
+        oyuncuObje.X = x;
+        oyuncuObje.Y = y;
+        //lblmantar.getX()=mantara;
+        //lblmantar.getY()=mantarb;
+        for (int i = 0; i < 5; i++) {
+           // altinlar[i].getX()=a[i]; 
+            //altinlar[i].getY() =b[i];
+            if (oyuncuObje.X == altinlar[i].getX() && oyuncuObje.Y == altinlar[i].getY()) {
+                oyuncuObje.skor += 5;
+                System.out.println("skor" + oyuncuObje.skor);
+                System.out.println("x" + oyuncuObje.getX() + "y" + oyuncuObje.getY());
+                System.out.println("altinx" + altinlar[i].getX() + "altiny" + altinlar[i].getY());
+                System.out.println("puangosterdeyim if");
+            } else if (oyuncuObje.getX() == lblmantar.getX() && oyuncuObje.getY() == lblmantar.getY()) {
+                oyuncuObje.skor += 50;
+                System.out.println("skor" + oyuncuObje.skor);
+            }
+        }
+    }
+
+    public void oyunSonu(int x, int y) {
+        oyuncuObje.X = x;
+        oyuncuObje.Y = y;
+        if (oyuncuObje.skor <= 0) {
+            lblfinal.setText("KAYBETTİNİZ");
+        } else if (oyuncuObje.X == 12 && oyuncuObje.Y == 7) {
+            lblfinal.setText("TEBRİKLER! KAZANDINIZ!");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
+    private void initComponents() {
+
+        lblbasla = new javax.swing.JLabel();
+        lblfinal = new javax.swing.JLabel();
+        lbloyuncu = new javax.swing.JLabel();
+        lblskor = new javax.swing.JLabel();
+        lblsirine = new javax.swing.JLabel();
+        btnplay = new javax.swing.JButton();
+        btntembel = new javax.swing.JButton();
+        btngozluklu = new javax.swing.JButton();
+        lblgargamel = new javax.swing.JLabel();
+        lblazman = new javax.swing.JLabel();
+        lblmantar = new javax.swing.JLabel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setBackground(new java.awt.Color(102, 204, 255));
+        setResizable(false);
+        getContentPane().setLayout(null);
+
+        lblbasla.setBackground(new java.awt.Color(102, 204, 255));
+        lblbasla.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblbasla.setForeground(new java.awt.Color(0, 0, 0));
+        lblbasla.setText("PLEASE CHOOSE THE SMURF YOU WANT TO PLAY AND PRESS START BUTTON");
+        getContentPane().add(lblbasla);
+        lblbasla.setBounds(870, 90, 510, 110);
+
+        lblfinal.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblfinal.setForeground(new java.awt.Color(0, 0, 0));
+        getContentPane().add(lblfinal);
+        lblfinal.setBounds(900, 400, 230, 50);
+
+        lbloyuncu.setPreferredSize(new java.awt.Dimension(60, 60));
+        getContentPane().add(lbloyuncu);
+        lbloyuncu.setBounds(413, 350, 60, 60);
+
+        lblskor.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblskor.setForeground(new java.awt.Color(0, 0, 0));
+        getContentPane().add(lblskor);
+        lblskor.setBounds(900, 330, 280, 50);
+
+        lblsirine.setIcon(new javax.swing.ImageIcon("C:\\Users\\acer\\Desktop\\images\\sirine.jpg")); // NOI18N
+        getContentPane().add(lblsirine);
+        lblsirine.setBounds(833, 470, 60, 60);
+
+        btnplay.setBackground(new java.awt.Color(0, 51, 255));
+        btnplay.setFont(new java.awt.Font("Segoe UI", 0, 36)); // NOI18N
+        btnplay.setForeground(new java.awt.Color(0, 0, 0));
+        btnplay.setText("START");
+        btnplay.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnplayActionPerformed(evt);
+            }
+        });
+        getContentPane().add(btnplay);
+        btnplay.setBounds(1030, 520, 180, 70);
+
+        btntembel.setIcon(new javax.swing.ImageIcon("C:\\Users\\acer\\Desktop\\images\\tembelSirin11.jpg")); // NOI18N
+        btntembel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btntembelActionPerformed(evt);
+            }
+        });
+        getContentPane().add(btntembel);
+        btntembel.setBounds(1170, 220, 180, 240);
+
+        btngozluklu.setIcon(new javax.swing.ImageIcon("D:\\NetBeansProjects\\JavaApplication1\\images\\gozlukluSirin1.jpg")); // NOI18N
+        btngozluklu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btngozlukluActionPerformed(evt);
+            }
+        });
+        getContentPane().add(btngozluklu);
+        btngozluklu.setBounds(880, 220, 180, 240);
+
+        lblgargamel.setPreferredSize(new java.awt.Dimension(60, 60));
+        getContentPane().add(lblgargamel);
+        lblgargamel.setBounds(653, 50, 60, 60);
+
+        lblazman.setPreferredSize(new java.awt.Dimension(60, 60));
+        getContentPane().add(lblazman);
+        lblazman.setBounds(233, 50, 60, 60);
+        getContentPane().add(lblmantar);
+        lblmantar.setBounds(680, 440, 0, 0);
+
+        pack();
+    }// </editor-fold>                        
+
+    class Helper extends TimerTask {
+
+        @Override
+        public void run() {
+            Random r = new Random();
+            int i = 0, j = 0, sayac = 0;
+            while (sayac < 5) {
+                i = r.nextInt(11);
+                j = r.nextInt(13);
+                if (maze[i][j] == '1') {
+                    altinlar[sayac].setBounds(53 + 60 * j, 50 + 60 * i, 60, 60);
+                    altinx[sayac] = 53 + 60 * j;
+                    altiny[sayac] = 50 + 60 * i;
+                    sayac++;
+                }
+            }
+            Random r1 = new Random();
+            i = 0;
+            j = 0;
+            i = r1.nextInt(11);
+            j = r1.nextInt(13);
+            if (maze[i][j] == '1') {
+                lblmantar.setBounds(53 + 60 * j, 50 + 60 * i, 60, 60);
+                mantarx = 53 + 60 * i;
+                mantary = 50 + 60 * i;
+            }
+        }
+    }
+
+    private void btnplayActionPerformed(java.awt.event.ActionEvent evt) {                                        
+        lblbasla.setVisible(false);
+        btntembel.setVisible(false);
+        btngozluklu.setVisible(false);
+        btnplay.setVisible(false);
+        lblgargamel.setIcon(new javax.swing.ImageIcon("images\\gargamel.jpg"));
+        lblazman.setIcon(new javax.swing.ImageIcon("images\\azman.jpg"));
+        lblsirine.setVisible(true);
+        lblskor.setVisible(true);
+        lblskor.setText("THE SMURF'S SCORE: " + Integer.toString(oyuncuObje.skor));
+        oyuncuObje.X = oyuncuObje.defaultx;
+        oyuncuObje.Y = oyuncuObje.defaulty;
+        Timer timer = new Timer();
+        TimerTask task = new Helper();
+        timer.scheduleAtFixedRate(task, 5000, 15000);
+    }                                       
+
+    private void btngozlukluActionPerformed(java.awt.event.ActionEvent evt) {                                            
+        oyuncuObje = gozluklu;
+        lbloyuncu.setIcon(new javax.swing.ImageIcon("images\\gozlukluSirin.jpg"));
+    }                                           
+
+    private void btntembelActionPerformed(java.awt.event.ActionEvent evt) {                                          
+        oyuncuObje = tembel;
+        lbloyuncu.setIcon(new javax.swing.ImageIcon("images\\tembelSirin.jpg"));
+    }                                         
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) throws FileNotFoundException, IOException {
+        deneme();
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new Oyun().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify                     
+    private javax.swing.JButton btngozluklu;
+    private javax.swing.JButton btnplay;
+    private javax.swing.JButton btntembel;
+    private javax.swing.JLabel lblazman;
+    private javax.swing.JLabel lblbasla;
+    private javax.swing.JLabel lblfinal;
+    private javax.swing.JLabel lblgargamel;
+    private javax.swing.JLabel lblmantar;
+    private javax.swing.JLabel lbloyuncu;
+    private javax.swing.JLabel lblsirine;
+    private javax.swing.JLabel lblskor;
+    // End of variables declaration                   
+}
+
+
+
+
+
+
+
+
+
+package TheSmurfs;
+
+import java.util.*;
+
+
+public class Graph {
+  private static final int UNDEFINED = -1;
+  private int vertices[][];
+
+  public Graph(int numVertices) {
+    vertices = new int[numVertices][numVertices];
+  }
+
+  /**
+   * Adiciona vértices ao grafo de maneira bidirecional, com o peso da aresta
+   */
+  public void makeEdge(int vertex1, int vertex2, int time) {
+    vertices[vertex1][vertex2] = time;
+    vertices[vertex2][vertex1] = time;
+  }
+
+  /**
+   * Remove vértices do grafo de maneira bidirecional
+   */
+  public void removeEdge(int vertex1, int vertex2) {
+    vertices[vertex1][vertex2] = 0;
+    vertices[vertex2][vertex1] = 0;
+  }
+
+  /**
+   * Retorna o custo da aresta
+   */
+  public int getCost(int vertex1, int vertex2) {
+    return vertices[vertex1][vertex2];
+  }
+
+  /**
+   * Retorna todos os vértices conectados ao vértice passado por parâmetro
+   */
+  public List<Integer> getNeighbors(int vertex) {
+    List<Integer> neighbors = new ArrayList<>();
+
+    //Realizamos um for na linha que representa o vértice, e adicionamos os vértices cujo índice é maior do que 0
+    for (int i = 0; i < vertices[vertex].length; i++)
+      if (vertices[vertex][i] > 0) {
+        neighbors.add(i);
+      }
+
+    return neighbors;
+  }
+
+  /**
+   * Implementação do algoritmo de Dijkstra
+   */
+  public List<Integer> path(int from, int to) {
+
+    //Cria listas com os custos de deslocamento até o momento
+    int cost[] = new int[vertices.length];
+
+    // Cria lista com vértices antecessores ao visitato atualmente
+    int prev[] = new int[vertices.length];
+
+    //Cria listas com os vértices não visitados,
+    Set<Integer> unvisited = new HashSet<>();
+
+    //Inicializa o custo do vértice inicial com 0
+    cost[from] = 0;
+
+    for (int v = 0; v < vertices.length; v++) {
+      if (v != from) {
+        //Inicializa o custo dos demais vértices inicial com um valor bem alto
+        cost[v] = Integer.MAX_VALUE;
+      }
+
+      //Define todos os valores como indefinido
+      prev[v] = UNDEFINED;
+
+      //Adiciona todos os vértices a lista de não visitados
+      unvisited.add(v);
+    }
+
+    //Busca
+    while (!unvisited.isEmpty()) {
+      //Obtem o vértice não visitado de menor custo
+      int near = closest(cost, unvisited);
+
+      //Removemos o vértice da lista de não visitados
+      unvisited.remove(near);
+
+      //Para cada vizinho calculoamos o custo total de deslocamento até ele
+      for (Integer neighbor : getNeighbors(near)) {
+        //Somamos o custo do nó até aqui mais o custo da aresta que liga os dois vértices
+        int totalCost = cost[near] + getCost(near, neighbor);
+
+        //Se o custo total for menor do que o custo atual a
+        if (totalCost < cost[neighbor]) {
+          //Atualizamos o custo
+          cost[neighbor] = totalCost;
+
+          //Marcamos o vértice antecessor
+          prev[neighbor] = near;
+        }
+      }
+
+      //Verifiação se o vértice processado é o destino
+      if (near == to) {
+        return makePathList(prev, near);
+      }
+    }
+
+    //No path found
+    return Collections.emptyList();
+  }
+
+  //Obtem o vértice não visitado de menor custo
+  private int closest(int[] dist, Set<Integer> unvisited) {
+    double minDist = Integer.MAX_VALUE;
+    int minIndex = 0;
+    for (Integer i : unvisited) {
+      if (dist[i] < minDist) {
+        minDist = dist[i];
+        minIndex = i;
+      }
+    }
+    return minIndex;
+  }
+
+  //Obtém caminho até o vértice de destino
+  private List<Integer> makePathList(int[] prev, int u) {
+    List<Integer> path = new ArrayList<>();
+    path.add(u);
+    while (prev[u] != UNDEFINED) {
+      path.add(prev[u]);
+      u = prev[u];
+    }
+    Collections.reverse(path);
+    return path;
+  }
+}
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+/**
+ *
+ * @author kutaybil
+ */
+public class Karakter extends Location {
+      public int ID;
+    String ad, tur;
+
+    public Karakter() {
+
+    }
+
+    public Karakter(int ID, String ad, String tur,int X,int Y) {
+        super(X,Y);
+        this.ID = ID;
+        this.ad = ad;
+        this.tur = tur;
+        
+    }
+   public Karakter(int ID, String ad, String tur){
+        this.ID = ID;
+        this.ad = ad;
+        this.tur = tur;
+   
+   }
+        
+    
+    public static void enKisaYol() {
+        System.out.print(TheSmurfs.player1.ad);
+
+    }
+    @Override
+     public int getX() {
+        return X;
+    }
+     @Override
+    public void setX(int X) {
+        this.X = X;
+    }
+    @Override
+    public int getY() {
+        return Y;
+    }
+    @Override
+    public void setY(int Y) {
+        this.Y= Y;
+    }
+
+    public int getID() {
+        return ID;
+    }
+
+    public void setID(int ID) {
+        this.ID = ID;
+    }
+
+    public String getAd() {
+        return ad;
+    }
+
+    public void setAd(String ad) {
+        this.ad = ad;
+    }
+
+    public String getTur() {
+        return tur;
+    }
+
+    public void setTur(String tur) {
+        this.tur = tur;
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+/**
+ *
+ * @author kutaybil
+ */
+public class Location {
+    int X, Y;
+     
+    
+    public Location(){
+        
+    }
+    
+    public Location(int X, int Y) {
+        this.X = X;
+        this.Y = Y;
+        
+    }
+
+    public int getX() {
+        return X;
+    }
+
+    public void setX(int X) {
+        this.X = X;
+    }
+
+    public int getY() {
+        return Y;
+    }
+
+    public void setY(int Y) {
+        this.Y = Y;
+    }
+
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package TheSmurfs;
+
+public class dijkstra {
+static char [][] gargamel=new char[11][13];
+  public static void Dijkstra(int matrix[][]){
+    
+    int x1=0,y1=0,x2=0,y2=0;
+    int count=0;
+    int a=0;
+    for(int i=0;i<11;i++){
+        for(int j=0;j<13;j++){
+            gargamel[i][j]=TheSmurfs.maze[i][j];
+        }
+    }
+    for(int i=0;i<13*11;i++){
+           for(int j=0;j<13*11;j++){
+                if(matrix[i][j]==1){
+                   count++;
+                }
+           }
+           
+       }
+      Graph labirinto = new Graph(count); 
+    for(int i=0;i<13*11;i++){
+           for(int j=0;j<13*11;j++){
+               if(matrix[i][j]==1){
+               x1=i%13;
+               x2=j%13;
+               y1=i/13;
+               y2=j/13;
+               if(TheSmurfs.maze[y1][x1]=='0'||TheSmurfs.maze[y2][x2]=='0'){
+               labirinto.makeEdge(i, j, 100000000);
+               labirinto.makeEdge(j, i, 100000000);
+               
+               }
+               else{
+               labirinto.makeEdge(i, j, 1);
+               labirinto.makeEdge(j, i, 1);
+               }
+               }
+                   
+           }
+       }
+   
+
+    System.out.println("Best path:");
+    for (Integer vertice : labirinto.path((TheSmurfs.Gargamel.y*13)+TheSmurfs.Gargamel.x, (TheSmurfs.player1.Y*13)+TheSmurfs.player1.X)) {
+        if(((TheSmurfs.Gargamel.y*13)+TheSmurfs.Gargamel.x)!=vertice){
+        gargamel[vertice/13][vertice%13]='G';
+        }
+      System.out.print((vertice) + " -> ");
+    }
+    System.out.println("Freedom!!!");
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package TheSmurfs;
+
+public class dusman extends Karakter{
+    int x=0,y=0;
+    public dusman() {
+    }
+
+    public dusman(int dusmanID, String dusmanAd, String dusmanTur,int x,int y) {
+        super(dusmanID, dusmanAd, dusmanTur);
+        this.x=x;
+        this.y=y;
+    }
+
+    @Override
+    public int getID() {
+        return ID;
+    }
+
+    @Override
+    public void setID(int ID) {
+        this.ID = ID;
+    }
+
+    @Override
+    public String getAd() {
+        return ad;
+    }
+
+    @Override
+    public void setAd(String ad) {
+        this.ad = ad;
+    }
+
+    @Override
+    public String getTur() {
+        return tur;
+    }
+
+    @Override
+    public void setTur(String tur) {
+        this.tur = tur;
+    }
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+/**
+ *
+ * @author kutaybil
+ */
+public class gargamel extends dusman {
+
+    public gargamel() {
+        
+    }
+     public gargamel(int dusmanID, String dusmanAd, String dusmanTur,int x,int y) {
+        super(dusmanID, dusmanAd, dusmanTur,x,y);
+    }
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package TheSmurfs;
+
+public class gold extends obje {
+
+    static int goldCount = 0, Gold = 5;
+
+
+    public gold() {
+        goldCount++;
+    }
+
+    public gold(int altinx, int altiny) {
+        super(altinx, altiny);
+        goldCount++;
+        
+    }
+
+    public static int getAltinsayisi() {
+        return goldCount;
+    }
+
+    public static void setAltinsayisi(int altinsayisi) {
+        gold.goldCount = goldCount;
+    }
+
+    public static int getAltin() {
+        return Gold;
+    }
+
+    public static void setAltin(int Gold) {
+        gold.Gold = Gold;
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+
+public class gozluklu extends oyuncu{
+   
+  
+
+    public gozluklu(int oyuncuID, String oyuncuAd, String oyuncuTur,int X,int Y,int yurumeHizi) {
+        super(oyuncuID, oyuncuAd, oyuncuTur,X,Y,yurumeHizi);
+    }
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package TheSmurfs;
+
+public class mantar extends obje{
+int Mantar = 50,Mantarx=0,Mantary=0;
+    public mantar() {
+        
+    }
+    public mantar(int Mantarx,int Mantary){
+        super(Mantarx,Mantary);
+        this.Mantarx=Mantarx;
+        this.Mantary=Mantary;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+/**
+ *
+ * @author kutaybil
+ */
+public class node {
+    int code;
+    boolean passed;
+
+    public node(int code, boolean passed) {
+        this.code = code;
+        this.passed = passed;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package TheSmurfs;
+
+public class obje {
+int objex=0,objey=0;
+    public obje() {
+        
+    }
+        public obje(int objex,int objey) {
+        this.objex=objex;
+        this.objey=objey;
+    }
+    public int getObjex() {
+        return objex;
+    }
+
+    public void setObjex(int objex) {
+        this.objex = objex;
+    }
+
+    public int getObjey() {
+        return objey;
+    }
+
+    public void setObjey(int objey) {
+        this.objey = objey;
+    }
+
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+/**
+ *
+ * @author kutaybil
+ */
+public class oyuncu extends Karakter{
+    public int skor=0;
+   public int yurumeHizi;
+
+    public oyuncu(int ID, String ad, String tur,int X,int Y,int yurumeHizi) {
+        super(ID,ad,tur,X,Y);
+        this.yurumeHizi=yurumeHizi;
+    }
+    public void PuaniGoster(){
+        
+    }
+
+    public int getSkor() {
+        return skor;
+    }
+
+    public void setSkor(int skor) {
+        this.skor = skor;
+    }
+
+    @Override
+    public String getAd() {
+        return ad;
+    }
+
+    @Override
+    public void setAd(String ad) {
+        this.ad = ad;
+    }
+
+    @Override
+    public String getTur() {
+        return tur;
+    }
+
+    @Override
+    public void setTur(String tur) {
+        this.tur = tur;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+
+public class puan extends oyuncu {
+
+    @Override
+    public void PuaniGoster() {
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TheSmurfs;
+
+/**
+ *
+ * @author kutaybil
+ */
+public class azman {
+    
+}
+
+
+
+
